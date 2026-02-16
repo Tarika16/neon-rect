@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+    return NextResponse.json({ message: "Signup API is ready" });
+}
+
 export async function POST(req: Request) {
     try {
         const { name, email, password } = await req.json();
@@ -51,10 +55,10 @@ export async function POST(req: Request) {
             },
             { status: 201 }
         );
-    } catch (error) {
+    } catch (error: any) {
         console.error("Signup error:", error);
         return NextResponse.json(
-            { error: "Something went wrong" },
+            { error: error.message || "Something went wrong" },
             { status: 500 }
         );
     }
