@@ -4,8 +4,18 @@ const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
 };
 
-console.log("DB_TS: DATABASE_URL is", process.env.DATABASE_URL ? "SET" : "NOT SET");
+// Truly lazy Prisma Client
+// This prevents the constructor from running during Next.js static analysis/build
+export const prisma = new Proxy({} as PrismaClient, {
+    get(target, prop, receiver) {
+        if (prop === "toJSON") return () => "PrismaClient";
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+        if (!globalForPrisma.prisma) {
+            // Only instantiate when first accessed
+            globalForPrisma.prisma = new PrismaClient();
+        }
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+        const value = (globalForPrisma.prisma as any)[prop];
+        return typeof value === "function" ? value.bind(globalForPrisma.prisma) : value;
+    },
+});
