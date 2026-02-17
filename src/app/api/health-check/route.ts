@@ -43,3 +43,25 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function POST(req: Request) {
+    try {
+        const { email, password } = await req.json();
+        if (!email || !password) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return NextResponse.json({ result: "User Not Found" }, { status: 404 });
+
+        const importBcrypt = await import("bcryptjs"); // Dynamic import to be safe
+        const isValid = await importBcrypt.compare(password, user.password);
+
+        return NextResponse.json({
+            result: isValid ? "SUCCESS: Password Correct" : "FAILURE: Password Incorrect",
+            email: user.email,
+            role: user.role,
+            approved: user.isApproved
+        });
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+}
